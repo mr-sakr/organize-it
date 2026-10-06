@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Organize It</title>
+  <!-- تطبيق قابل للتثبيت (PWA) -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1b1f27" media="(prefers-color-scheme: dark)">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1 class="brand"><img src="icons/icon-192.png" alt="" class="logo"><span data-i18n="appTitle"></span></h1>
+    <nav class="tabs">
+      <button class="tab" data-view="week" data-i18n="tabWeek"></button>
+      <button class="tab" data-view="calendar" data-i18n="tabCalendar"></button>
+      <button class="tab" data-view="goals" data-i18n="tabGoals"></button>
+    </nav>
+    <div class="backup">
+      <button id="undoBtn" class="btn ghost" data-i18n="undo" data-i18n-title="undoTitle" disabled></button>
+      <button id="langBtn" class="btn ghost lang" data-i18n="langToggle"></button>
+      <button id="exportBtn" class="btn ghost" data-i18n="export" data-i18n-title="exportTitle"></button>
+      <label class="btn ghost" data-i18n-title="importTitle">
+        <span data-i18n="import"></span><input type="file" id="importInput" accept="application/json" hidden>
+      </label>
+    </div>
+  </header>
+
+  <!-- ===== الجدول الأسبوعي ===== -->
+  <main id="view-week" class="view">
+    <div class="toolbar">
+      <button class="btn" id="prevWeek" data-i18n="arrowPrev" data-i18n-title="prevWeek"></button>
+      <button class="btn" id="todayBtn" data-i18n="today"></button>
+      <button class="btn" id="nextWeek" data-i18n="arrowNext" data-i18n-title="nextWeek"></button>
+      <strong id="weekLabel"></strong>
+      <span id="weekStats" class="wk-progress"></span>
+      <span class="spacer"></span>
+      <span class="muted hint" data-i18n="hint"></span>
+      <div class="save-group">
+        <button class="btn" id="saveImgBtn" data-i18n="saveImg" data-i18n-title="saveImgTitle"></button>
+        <button class="btn" id="savePdfBtn" data-i18n="savePdf" data-i18n-title="savePdfTitle"></button>
+      </div>
+      <div class="zoom" id="zoom-week" data-kind="week">
+        <button class="btn" data-zoom="-1" data-i18n-title="zoomOut">−</button>
+        <button class="btn zoom-val" data-zoom="0" data-i18n-title="zoomReset"></button>
+        <button class="btn" data-zoom="1" data-i18n-title="zoomIn">+</button>
+      </div>
+    </div>
+    <div class="grid-wrap">
+      <div id="grid" class="grid"></div>
+    </div>
+  </main>
+
+  <!-- ===== التقويم الشهري / السنوي ===== -->
+  <main id="view-calendar" class="view">
+    <div class="toolbar">
+      <button class="btn" id="calPrev" data-i18n="arrowPrev" data-i18n-title="prev"></button>
+      <button class="btn" id="calToday" data-i18n="today"></button>
+      <button class="btn" id="calNext" data-i18n="arrowNext" data-i18n-title="next"></button>
+      <strong id="calLabel"></strong>
+      <span id="calStats" class="wk-progress"></span>
+      <span class="spacer"></span>
+      <span class="muted hint" data-i18n="calHint"></span>
+      <div class="zoom" id="zoom-month" data-kind="month">
+        <button class="btn" data-zoom="-1" data-i18n-title="zoomOut">−</button>
+        <button class="btn zoom-val" data-zoom="0" data-i18n-title="zoomReset"></button>
+        <button class="btn" data-zoom="1" data-i18n-title="zoomIn">+</button>
+      </div>
+      <div class="seg">
+        <button class="seg-btn" data-cal="month" data-i18n="calMonth"></button>
+        <button class="seg-btn" data-cal="year" data-i18n="calYear"></button>
+      </div>
+    </div>
+    <div id="calBody"></div>
+  </main>
+
+  <!-- ===== الأهداف ===== -->
+  <main id="view-goals" class="view">
+    <div id="goalCards" class="goal-cards"></div>
+  </main>
+
+  <!-- ===== نافذة المهمة ===== -->
+  <dialog id="taskDialog">
+    <form id="taskForm" method="dialog">
+      <div class="dlg-body">
+      <h2 id="taskDialogTitle"></h2>
+      <div id="scopeBox" class="note scope" hidden>
+        <span class="field-label" data-i18n="scopeLabel"></span>
+        <label class="check"><input type="radio" name="scope" value="following" checked> <span data-i18n="scopeFollowing"></span></label>
+        <label class="check"><input type="radio" name="scope" value="one"> <span data-i18n="scopeOne"></span></label>
+      </div>
+      <label><span data-i18n="fTitle"></span>
+        <input name="title" required maxlength="200" autocomplete="off">
+      </label>
+      <label><span id="dateLabel" data-i18n="fDate"></span> <input type="date" name="date" required></label>
+      <div class="row">
+        <label><span data-i18n="fStart"></span> <input type="time" name="start" step="60" required></label>
+        <label><span data-i18n="fEnd"></span> <input type="time" name="end" step="60" required></label>
+      </div>
+      <p id="taskDuration" class="muted"></p>
+      <div class="field">
+        <span class="field-label" data-i18n="fColor"></span>
+        <div class="colors" id="taskColors"></div>
+      </div>
+      <label class="check" id="repeatRow"><input type="checkbox" name="repeat"> <span data-i18n="fRepeat"></span></label>
+      <div id="repeatBox" class="repeat-box" hidden>
+        <div class="days" id="repeatDays"></div>
+        <label class="check"><input type="checkbox" name="allDays"> <span data-i18n="fAllDays"></span></label>
+        <label><span data-i18n="fUntil"></span> <input type="date" name="until"></label>
+      </div>
+      <label><span data-i18n="fNotes"></span> <textarea name="notes" rows="3"></textarea></label>
+      <label class="check"><input type="checkbox" name="done"> <span id="doneLabel" data-i18n="fDone"></span></label>
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn primary" data-i18n="save"></button>
+        <button type="button" class="btn" data-close data-i18n="cancel"></button>
+        <span class="del-group">
+          <button type="button" class="btn danger" id="taskDeleteOne" data-i18n="deleteOne"></button>
+          <button type="button" class="btn danger" id="taskDelete" data-i18n="delete"></button>
+        </span>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ===== نافذة الهدف ===== -->
+  <dialog id="goalDialog">
+    <form id="goalForm" method="dialog">
+      <div class="dlg-body">
+      <h2 data-i18n="goalEdit"></h2>
+      <p id="goalPeriod" class="muted"></p>
+      <label><span data-i18n="fGoal"></span>
+        <input name="title" required maxlength="200" autocomplete="off">
+      </label>
+      <label><span data-i18n="fParent"></span> <select name="parent"></select></label>
+      <label><span data-i18n="fMove"></span> <select name="move"></select></label>
+      <label><span data-i18n="fNotes"></span> <textarea name="notes" rows="3"></textarea></label>
+      <label class="check"><input type="checkbox" name="done"> <span data-i18n="fGoalDone"></span></label>
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn primary" data-i18n="save"></button>
+        <button type="button" class="btn" data-close data-i18n="cancel"></button>
+        <span class="del-group">
+          <button type="button" class="btn danger" id="goalDelete" data-i18n="delete"></button>
+        </span>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="i18n.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

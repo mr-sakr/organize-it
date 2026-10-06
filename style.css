@@ -1,0 +1,711 @@
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --text: #1d2330;
+  --muted: #6b7280;
+  --line: #c9ced6;
+  --line-strong: #1d2330;
+  --night: #eef0f3;
+  --accent: #2563eb;
+  --accent-soft: #dbe6ff;
+  --done: #16a34a;
+  --danger: #dc2626;
+  --today: #fff7d6;
+  --radius: 8px;
+  font-family: "Segoe UI", Tahoma, "Noto Sans Arabic", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151b;
+    --surface: #1b1f27;
+    --text: #e6e8ec;
+    --muted: #9aa1ad;
+    --line: #343a46;
+    --line-strong: #8a93a3;
+    --night: #161a21;
+    --accent: #6b9bff;
+    --accent-soft: #23314f;
+    --done: #34c46a;
+    --danger: #f05252;
+    --today: #2f2a17;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+}
+
+button, input, select, textarea { font: inherit; color: inherit; }
+
+/* ===== Top bar ===== */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.topbar h1 { font-size: 18px; margin: 0; }
+.brand { display: flex; align-items: center; gap: 8px; }
+.logo { width: 28px; height: 28px; border-radius: 7px; flex: none; }
+.tabs { display: flex; gap: 4px; }
+.tab {
+  border: 0;
+  background: none;
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--muted);
+  font-weight: 600;
+}
+.tab.active { background: var(--accent-soft); color: var(--accent); }
+.backup { margin-inline-start: auto; display: flex; gap: 6px; }
+
+/* ===== Buttons ===== */
+.btn {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.danger { color: var(--danger); }
+.btn.danger:hover { border-color: var(--danger); }
+.btn.ghost { background: transparent; }
+.btn:disabled { opacity: .4; cursor: default; border-color: var(--line); }
+.icon-btn {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  color: var(--muted);
+}
+.icon-btn:hover { background: var(--bg); color: var(--text); }
+.icon-btn.del:hover { color: var(--danger); }
+
+.muted { color: var(--muted); }
+.spacer { flex: 1; }
+
+.view { display: none; padding: 16px; }
+.view.active { display: block; }
+
+/* ===== Week toolbar ===== */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.toolbar strong { font-size: 16px; margin-inline: 8px; }
+.hint { font-size: 12px; }
+
+/* إنجاز الأسبوع */
+.wk-progress { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
+.wk-progress:empty { display: none; }
+.wk-label { color: var(--muted); }
+.wk-track { width: 140px; height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.wk-fill { display: block; height: 100%; border-radius: 99px; background: var(--accent); transition: width .3s; }
+.wk-fill.full { background: var(--done); }
+.wk-pct { font-size: 14px; }
+
+/* دايرة إنجاز اليوم */
+.ring {
+  --p: 0;
+  --ring-bg: var(--surface);
+  --ring-c: var(--accent);
+  position: relative;
+  width: 38px;
+  height: 38px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: conic-gradient(var(--ring-c) calc(var(--p) * 1%), var(--line) 0);
+  display: grid;
+  place-items: center;
+}
+.ring.full { --ring-c: var(--done); }
+.ring::before { content: ''; position: absolute; inset: 4px; border-radius: 50%; background: var(--ring-bg); }
+.ring span { position: relative; font-size: 10px; font-weight: 700; }
+.daylabel.today .ring { --ring-bg: color-mix(in srgb, var(--today) 100%, var(--surface)); }
+
+/* ===== Week grid ===== */
+/* الجدول بيعمل scroll جوه نفسه (أفقي ورأسي) عشان صف الساعات وعمود الأيام يفضلوا ثابتين.
+   أقصى ارتفاع بيتحسب بالـ JS على قد الشاشة */
+.grid-wrap {
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+}
+/* --col-w = عرض الساعة، بيتحسب بالـ JS على حسب الزووم */
+.grid {
+  --label-w: 84px;
+  display: grid;
+  grid-template-columns: var(--label-w) repeat(12, var(--col-w, 104px));
+  width: max-content;
+}
+.corner, .hhead {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  border-bottom: 2px solid var(--line-strong);
+  border-inline-start: 1px solid var(--line);
+  font-weight: 700;
+  font-size: 12px;
+}
+.corner { display: grid; place-items: center; font-size: 18px; border-inline-start: 0; }
+.hhead { display: flex; flex-direction: column; }
+.hhead > span { padding: 3px 6px; direction: ltr; text-align: left; white-space: nowrap; overflow: hidden; }
+.hhead .hap { font-style: normal; }
+.grid.narrow .hhead .hap, .grid.tiny .hhead .hm { display: none; }
+.grid.narrow .hhead > span { padding: 3px 2px; font-size: 11px; text-align: center; }
+.hhead > span + span { border-top: 1px solid var(--line); background: var(--night); }
+
+/* مسطرة الدقايق تحت عنوان الساعة */
+.mins { position: relative; height: 15px; border-top: 1px solid var(--line); font-size: 9px; font-weight: 400; color: var(--muted); overflow: hidden; }
+.mins span { position: absolute; top: 1px; line-height: 13px; transform: translateX(-50%); }
+[dir=rtl] .mins span { transform: translateX(50%); }
+.mins .q { font-size: 10px; font-weight: 700; color: var(--text); }
+.grid:not(.q) .mins { display: none; }
+.grid:not(.m10) .mins .m10, .grid:not(.m5) .mins .m5 { display: none; }
+
+.daylabel {
+  grid-row: span 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-weight: 700;
+  border-top: 2px solid var(--line-strong);
+  padding: 6px 4px;
+  text-align: center;
+}
+.daylabel .dname { font-size: 15px; }
+/* عمود الأيام (وخانة #) ثابت وانت بتعمل scroll للساعات بعد الزووم */
+.corner, .daylabel {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 4;
+  background: var(--surface);
+  box-shadow: 1px 0 0 var(--line-strong), -1px 0 0 var(--line-strong);
+}
+.hhead { z-index: 5; }   /* صف الساعات فوق الأيام لما تعمل scroll لتحت */
+.corner { z-index: 6; }  /* خانة # فوق الاتنين */
+.daylabel .ddate { font-size: 11px; color: var(--muted); font-weight: 400; }
+.daylabel.today { background: var(--today); }
+.grid > .daylabel:nth-child(2) { border-top: 0; }
+
+.track {
+  grid-column: span 12;
+  position: relative;
+  cursor: pointer;
+}
+.track.am { border-top: 2px solid var(--line-strong); }
+.track.pm { border-top: 1px dashed var(--line); }
+.track.first-day.am { border-top: 0; }
+.track.drop { outline: 2px dashed var(--accent); outline-offset: -3px; }
+
+.slots {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+}
+.slot { border-inline-start: 1px solid var(--line); }
+/* خطوط كسور الساعة جوه كل خانة: كل 5 دقايق (خفيف)، كل ربع، والنص أوضح */
+.grid { --tick-dir: to right; --tick: color-mix(in srgb, var(--line) 75%, transparent); --tick-5: color-mix(in srgb, var(--line) 40%, transparent); }
+[dir=rtl] .grid { --tick-dir: to left; }
+.grid.q .slot {
+  background-image:
+    linear-gradient(var(--tick-dir), transparent calc(50% - 1px), var(--line) calc(50% - 1px) 50%, transparent 50%),
+    repeating-linear-gradient(var(--tick-dir), transparent 0 calc(var(--col-w) / 4 - 1px), var(--tick) calc(var(--col-w) / 4 - 1px) calc(var(--col-w) / 4));
+}
+.grid.m10 .slot {
+  background-image:
+    linear-gradient(var(--tick-dir), transparent calc(50% - 1px), var(--line) calc(50% - 1px) 50%, transparent 50%),
+    repeating-linear-gradient(var(--tick-dir), transparent 0 calc(var(--col-w) / 4 - 1px), var(--tick) calc(var(--col-w) / 4 - 1px) calc(var(--col-w) / 4)),
+    repeating-linear-gradient(var(--tick-dir), transparent 0 calc(var(--col-w) / 12 - 1px), var(--tick-5) calc(var(--col-w) / 12 - 1px) calc(var(--col-w) / 12));
+}
+.slot.night { background: var(--night); }
+.today-col .slot { box-shadow: inset 0 0 0 9999px color-mix(in srgb, var(--today) 45%, transparent); }
+.slot:hover { background: var(--accent-soft); }
+.track.drop .slot { background: color-mix(in srgb, var(--accent-soft) 60%, transparent); }
+
+.nowline {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-inline-start: -1px;
+  background: var(--danger);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* --c = لون المهمة: الإطار الجانبي بلونه كامل، والخلفية نفس اللون شفاف */
+.bar {
+  --c: var(--accent);
+  position: absolute;
+  height: 34px;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--c) 20%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
+  border-inline-start: 4px solid var(--c);
+  border-radius: 5px;
+  padding: 2px 4px;
+  font-size: 12px;
+  line-height: 1.3;
+  cursor: grab;
+  z-index: 1;
+}
+.bar:hover { border-color: var(--c); z-index: 3; }
+.bar.cont-start { border-start-start-radius: 0; border-end-start-radius: 0; border-inline-start-style: dotted; }
+.bar.cont-end { border-start-end-radius: 0; border-end-end-radius: 0; }
+.bar.done { opacity: .6; }
+.bar.done .ctitle { text-decoration: line-through; }
+.btext { display: flex; flex-direction: column; min-width: 0; }
+.btext span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ctitle { font-weight: 600; }
+.btime { font-size: 10px; color: var(--muted); direction: ltr; text-align: start; }
+.bar .chk, .mchip .chk {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+  border: 1.5px solid var(--muted);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  cursor: pointer;
+  background: var(--surface);
+}
+.bar.done .chk, .mchip.done .chk { background: var(--done); border-color: var(--done); color: #fff; }
+
+/* ===== حفظ صورة / PDF ===== */
+.save-group { display: inline-flex; gap: 6px; }
+
+/* ===== Zoom ===== */
+.zoom { display: inline-flex; align-items: center; }
+.zoom[hidden] { display: none; }
+.zoom .btn { border-radius: 0; padding: 5px 10px; font-weight: 700; }
+.zoom .btn:first-child { border-start-start-radius: var(--radius); border-end-start-radius: var(--radius); }
+.zoom .btn:last-child { border-start-end-radius: var(--radius); border-end-end-radius: var(--radius); }
+.zoom .btn + .btn { margin-inline-start: -1px; }
+.zoom .zoom-val { min-width: 58px; font-weight: 600; font-size: 12px; }
+
+/* ===== Calendar: month ===== */
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.seg-btn { border: 0; background: var(--surface); padding: 6px 14px; cursor: pointer; font-weight: 600; color: var(--muted); }
+.seg-btn + .seg-btn { border-inline-start: 1px solid var(--line); }
+.seg-btn.active { background: var(--accent-soft); color: var(--accent); }
+
+.month-wrap { overflow-x: auto; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); }
+.month-grid { display: grid; grid-template-columns: repeat(7, var(--col-w, minmax(0, 1fr))); width: max-content; min-width: 100%; }
+.mhead {
+  padding: 8px;
+  text-align: center;
+  font-weight: 700;
+  border-bottom: 2px solid var(--line-strong);
+  border-inline-start: 1px solid var(--line);
+}
+.mhead:first-child, .mday:nth-child(7n + 1) { border-inline-start: 0; }
+.mhead .short { display: none; }
+@media (max-width: 600px) { .mhead .full { display: none; } .mhead .short { display: inline; } }
+.mday {
+  min-height: 118px;
+  min-width: 0;
+  padding: 4px;
+  border-inline-start: 1px solid var(--line);
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+}
+.mday:hover { background: color-mix(in srgb, var(--accent-soft) 50%, transparent); }
+.mday.out { background: var(--night); }
+.mday.out .mnum { color: var(--muted); font-weight: 400; }
+.mday.today { background: color-mix(in srgb, var(--today) 70%, transparent); }
+.mday.today .mnum { background: var(--accent); color: #fff; }
+.mday.drop { outline: 2px dashed var(--accent); outline-offset: -3px; background: var(--accent-soft); }
+.mday-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.mnum { font-weight: 700; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 99px; display: grid; place-items: center; }
+.mcount { font-size: 11px; color: var(--muted); background: var(--bg); border-radius: 99px; padding: 0 6px; }
+.mcount.full { color: #fff; background: var(--done); }
+.mlist { display: flex; flex-direction: column; gap: 3px; max-height: 150px; overflow-y: auto; }
+.mchip {
+  --c: var(--accent);
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  padding: 2px 4px;
+  border-radius: 4px;
+  border-inline-start: 3px solid var(--c);
+  background: color-mix(in srgb, var(--c) 20%, var(--surface));
+  font-size: 11.5px;
+  line-height: 1.3;
+  cursor: grab;
+  white-space: nowrap;
+}
+.mchip:hover { box-shadow: 0 0 0 1px var(--c); }
+.mchip.done { opacity: .6; }
+.mchip.done .mtitle { text-decoration: line-through; }
+.mchip .chk { width: 12px; height: 12px; font-size: 9px; margin-top: 2px; }
+.mtext { display: flex; flex-direction: column; min-width: 0; }
+.mtext span { overflow: hidden; text-overflow: ellipsis; }
+.mtime { font-size: 10px; color: var(--muted); direction: ltr; text-align: start; }
+.mtitle { font-weight: 600; }
+
+/* ===== Calendar: year ===== */
+.year-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.ymonth { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+.yhead {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 15px;
+  text-align: start;
+  padding: 4px 6px 8px;
+  border-radius: 6px;
+}
+.yhead:hover { color: var(--accent); }
+.ydays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
+.ydow { font-size: 10px; color: var(--muted); font-weight: 700; padding-bottom: 2px; }
+.yd {
+  position: relative;
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  font-size: 11.5px;
+  cursor: pointer;
+  padding: 0;
+}
+.yd.blank { cursor: default; }
+.yd:not(.blank):hover { background: var(--accent-soft); }
+.yd.has { background: color-mix(in srgb, var(--accent) 22%, transparent); font-weight: 700; }
+.yd.all-done { background: color-mix(in srgb, var(--done) 28%, transparent); font-weight: 700; }
+.yd.today { box-shadow: inset 0 0 0 2px var(--accent); }
+
+/* ===== Goals ===== */
+/* الأسبوعية بعرض الصفحة كله، تحتها الشهرية والسنوية جنب بعض، وبعدهم المعلّقة */
+.goal-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.gcard[data-type=week] { grid-column: 1 / -1; }
+@media (max-width: 760px) { .goal-cards { grid-template-columns: minmax(0, 1fr); gap: 12px; } }
+.gcard {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.gcard header { display: flex; align-items: center; gap: 6px; }
+.gcard h3 { margin: 0; font-size: 16px; }
+.gcard .period { flex: 1; text-align: center; font-weight: 600; font-size: 13px; }
+.gcard .maxbtn { font-size: 16px; }
+.gcard.backlog { grid-column: 1 / -1; border-style: dashed; border-color: var(--line-strong); }
+.gcard.backlog .period { font-weight: 400; font-size: 12px; text-align: start; padding-inline: 8px; }
+.goal-cards.has-max { grid-template-columns: 1fr; }
+.gcard.max { min-height: calc(100vh - 110px); font-size: 15px; padding: 20px 24px; }
+.gcard.max h3 { font-size: 20px; }
+.gcard.max .gnode { padding: 6px 4px; }
+.progress { height: 6px; background: var(--bg); border-radius: 99px; overflow: hidden; }
+.progress > div { height: 100%; background: var(--done); transition: width .2s; }
+.gstats { font-size: 12px; }
+.gtree { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+/* خطوط الشجرة: خط نازل من تحت سهم الأب، وسهم أفقي داخل على كل ابن.
+   --row-mid = منتصف ارتفاع سطر الهدف (مكان السهم الأفقي) */
+.gtree {
+  --row-mid: 17px;
+  --tree-line: var(--muted);
+  --node-pad: 3px;      /* حشو سطر الهدف + الإطار */
+  --tog-w: 18px;        /* زرار الطيّ + المسافة بعده */
+  --star-w: 26px;       /* النجمة + المسافة بعدها */
+  --into-title: 1.6em;  /* الخط بيبدأ بعد حوالي 3 حروف من اسم الأب */
+}
+.gcard.max .gtree { --row-mid: 19px; --node-pad: 5px; }
+.gtree .gtree { gap: 0; }
+/* أبناء هدف رئيسي: بعد الطيّ + النجمة + 3 حروف */
+.gtree.root > li > .gtree { margin-inline-start: calc(var(--node-pad) + var(--tog-w) + var(--star-w) + var(--into-title)); }
+/* أبناء هدف فرعي: بعد الطيّ + 3 حروف */
+.gtree .gtree > li > .gtree { margin-inline-start: calc(var(--node-pad) + var(--tog-w) + var(--into-title)); }
+.gtree .gtree > li { position: relative; padding-inline-start: 24px; padding-block: 1px; }
+.gtree .gtree > li::before { /* الخط النازل */
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0;
+  bottom: 0;
+  border-inline-start: 2px solid var(--tree-line);
+}
+.gtree .gtree > li:last-child::before { bottom: auto; height: calc(var(--row-mid) + 1px); }
+.gtree .gtree > li::after { /* الخط الأفقي */
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  top: var(--row-mid);
+  width: 16px;
+  border-top: 2px solid var(--tree-line);
+}
+.gtree .gtree > li > .gnode::before, .gtree .gtree > li > .gadd::before { /* رأس السهم */
+  content: '';
+  position: absolute;
+  inset-inline-start: 15px;
+  top: calc(var(--row-mid) - 4px);
+  border-block: 5px solid transparent;
+  border-inline-start: 7px solid var(--tree-line);
+}
+.gstar { flex: none; width: 22px; text-align: center; font-size: 22px; line-height: 1; color: #f5a524; }
+li.done > .gnode .gstar { color: var(--done); }
+/* الأزرار لازقة في طرف الكارت ومش بتتحرك مع الـ scroll الأفقي */
+.gactions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  margin-inline-start: auto;
+  position: sticky;
+  inset-inline-end: 0;
+  z-index: 2;
+  padding-inline-start: 8px;
+  background: var(--surface);
+}
+.gtree-scroll.scrolling .gactions { box-shadow: 0 0 10px 4px var(--surface); }
+.gactions input[type=checkbox] { margin-inline-end: 4px; }
+.gnode {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 2px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+.gnode:hover { border-color: var(--line); }
+/* الشجرة بتعمل scroll أفقي لما المستويات تعمق، بدل ما السطر يتكسر أو الأزرار تنزل */
+.gcard { min-width: 0; } /* عشان الشجرة تعمل scroll جوه الكارت بدل ما توسّع الصفحة */
+.gtree-scroll { overflow-x: auto; overflow-y: hidden; padding-bottom: 2px; }
+.gnode { flex-wrap: nowrap; }
+/* الاسم ليه أقل عرض، ولو مفيش مكان الشجرة بتعمل scroll بدل ما الاسم يتزنق */
+.gnode .gtitle { flex: 1 1 auto; min-width: 9em; word-break: break-word; }
+.gnode .gtitle small { display: block; color: var(--muted); }
+.gcount {
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--bg);
+  border-radius: 99px;
+  padding: 0 6px;
+  margin-inline-start: 6px;
+  white-space: nowrap;
+}
+li.done > .gnode .gtitle { text-decoration: line-through; color: var(--muted); }
+.gnode input[type=checkbox] { flex: none; width: 16px; height: 16px; accent-color: var(--done); cursor: pointer; }
+.gnode .tog { width: 14px; padding: 0; flex: none; font-size: 12px; }
+/* لو مفيش ولا هدف رئيسي ليه أبناء، مكان زرار الطيّ بيتشال خالص */
+.gtree.root.flat > li > .gnode .tog { display: none; }
+.gnode .tog:disabled { visibility: hidden; }
+.gtree .gtree .tog:disabled { display: none; } /* السهم يوصل للاسم على طول */
+.gnode .icon-btn:not(.tog) { opacity: .45; }
+.gnode:hover .icon-btn, .gnode .icon-btn:focus-visible { opacity: 1; }
+@media (hover: none) { .gnode .icon-btn { opacity: 1; } }
+.gadd.sub { margin: 2px 0 4px; }
+.gadd.sub input { padding: 4px 8px; }
+.gadd.sub .btn { padding: 4px 10px; }
+.gempty { color: var(--muted); font-size: 13px; text-align: center; padding: 8px; }
+.gadd { display: flex; gap: 6px; }
+.gadd input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+/* ===== Dialogs ===== */
+dialog {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0;
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: hidden;
+  background: var(--surface);
+  color: var(--text);
+}
+dialog[open] { display: flex; flex-direction: column; }
+dialog::backdrop { background: rgb(0 0 0 / .45); }
+dialog form { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+/* الحقول بتعمل scroll، والأزرار ثابتة تحت */
+.dlg-body { display: flex; flex-direction: column; gap: 12px; padding: 18px; overflow-y: auto; min-height: 0; }
+dialog h2 { margin: 0; font-size: 17px; }
+dialog p { margin: 0; }
+dialog label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; font-size: 13px; flex: 1; }
+.note { margin: 0; padding: 8px 10px; border-radius: var(--radius); background: var(--accent-soft); font-size: 12px; }
+.note[hidden], dialog label.check[hidden] { display: none; }
+.scope { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.scope label.check { font-weight: 400; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field-label { font-weight: 600; font-size: 13px; }
+dialog label.check { flex-direction: row; align-items: center; gap: 8px; }
+dialog input:not([type=checkbox]), dialog select, dialog textarea {
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  font-weight: 400;
+}
+dialog textarea { resize: vertical; }
+.row { display: flex; gap: 10px; }
+.colors { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--line);
+  background: var(--c);
+  cursor: pointer;
+  padding: 0;
+}
+.swatch.selected { box-shadow: 0 0 0 2px var(--text); }
+.swatch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+dialog label.custom-color { position: relative; display: inline-flex; flex: none; }
+.custom-color input[type=color] {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  overflow: hidden;
+}
+.custom-color input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+.custom-color input[type=color]::-webkit-color-swatch { border: none; border-radius: 50%; }
+.custom-color.selected { border-radius: 50%; box-shadow: 0 0 0 2px var(--text); }
+.custom-color span { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; font-size: 13px; color: #fff; text-shadow: 0 0 2px #000; }
+.repeat-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+.repeat-box[hidden] { display: none; }
+.days { display: flex; flex-wrap: wrap; gap: 6px; }
+dialog label.day-chip { flex: none; position: relative; cursor: pointer; }
+.day-chip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.day-chip span {
+  display: block;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--surface);
+  font-weight: 600;
+  font-size: 12px;
+  user-select: none;
+}
+.day-chip input:checked + span { background: var(--accent); border-color: var(--accent); color: #fff; }
+.day-chip input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+}
+.actions .btn { padding: 8px 16px; }
+.actions .btn.primary { min-width: 96px; font-weight: 600; }
+.actions .btn[hidden] { display: none; }
+/* أزرار الحذف مجموعة واحدة في الناحية التانية، ولو مفيش مكان بتنزل سوا سطر لوحدها */
+.del-group { display: flex; gap: 8px; margin-inline-start: auto; }
+@media (max-width: 480px) {
+  .actions .btn { flex: 1; }
+  .del-group { flex-basis: 100%; }
+}
+
+/* ===== Mobile ===== */
+@media (max-width: 600px) {
+  .view { padding: 10px; }
+  .hint { display: none; }
+
+  /* الشريط العلوي: سطر للاسم والأزرار الصغيرة، وسطر للتبويبات بعرض الشاشة */
+  .topbar { gap: 8px; padding: 8px 10px; }
+  .topbar h1 { font-size: 16px; }
+  .logo { width: 24px; height: 24px; border-radius: 6px; }
+  .brand { gap: 6px; }
+  .backup { gap: 4px; }
+  .backup .btn { padding: 4px 7px; font-size: 12px; }
+  .tabs { order: 3; width: 100%; }
+  .tab { flex: 1; padding: 7px 4px; font-size: 13px; }
+
+  .toolbar { gap: 6px; }
+  .toolbar strong { font-size: 14px; margin-inline: 4px; }
+  .wk-progress { width: 100%; }
+  .wk-track { flex: 1; width: auto; }
+
+  .grid { --label-w: 64px; }
+  .daylabel .dname { font-size: 13px; }
+  .ring { width: 32px; height: 32px; }
+
+  /* كروت الأهداف: الاسم وزرار التكبير في سطر، والتنقل بين الفترات في سطر تحته */
+  .gcard { padding: 12px; }
+  .gnode .gtitle { min-width: 6em; }
+  .gactions .icon-btn { padding: 2px 4px; }
+  .gcard header { flex-wrap: wrap; row-gap: 4px; }
+  .gcard header h3 { flex: 1 1 calc(100% - 44px); order: 0; }
+  .gcard header .maxbtn { order: 1; }
+  .gcard header > :not(h3):not(.maxbtn) { order: 2; }
+  .gcard header .period { flex: 1; font-size: 12px; }
+  .gcard.backlog .period { text-align: start; padding-inline: 0; }
+  .gcard.max { padding: 14px; min-height: calc(100dvh - 120px); }
+
+  /* التقويم الشهري: كل الشهر في الشاشة من غير scroll، والمهام سطر صغير */
+  .mhead { padding: 6px 0; font-size: 11px; }
+  .mday { min-height: 64px; padding: 2px; gap: 2px; }
+  .mday-head { justify-content: center; }
+  .mnum { min-width: 20px; height: 20px; padding: 0 4px; font-size: 12px; }
+  .mcount { display: none; }
+  .mlist { max-height: 90px; gap: 2px; }
+  .mchip { padding: 1px 2px; font-size: 10px; border-inline-start-width: 2px; }
+  .mchip .chk, .mchip .mtime { display: none; }
+  .year-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .ymonth { padding: 6px; }
+  .yd { font-size: 10.5px; }
+}
